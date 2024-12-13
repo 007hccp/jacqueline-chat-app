@@ -32,7 +32,7 @@ export default {
     return {
       inputMessage: '',
       messages: [
-        { text: 'Hello! How can I help you?', sender: 'bot' },
+        { text: 'Hello! How are you feeling?', sender: 'bot' },
         { text: 'Hi! I have a question.', sender: 'user' },
       ],
     };
