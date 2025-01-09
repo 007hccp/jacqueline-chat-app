@@ -5,12 +5,36 @@
       <div
         v-for="(message, index) in messages"
         :key="index"
-        :class="['message', message.sender]"
+        :class="['message-wrapper', message.sender]"
       >
-        <!-- <div v-if="message.sender === ""></div> -->
-        <p v-html="message.text" />
+        <!-- Avatar and Name -->
+        <div class="message-header">
+          <img
+            :src="avatar[message.sender].image"
+            alt="avatar"
+            class="avatar"
+          />
+          <!-- <template v-if="message.sender === 'bot'">
+            <img
+              :src="avatar[message.sender].image"
+              alt="avatar"
+              class="avatar"
+            />
+          </template>
+          <template v-else>
+            <div class="user-imoji">
+              😀
+            </div>
+          </template> -->
+          <!-- <div class="avatar">
+          </div> -->
+          <p class="name">{{ avatar[message.sender].name }}</p>
+        </div>
+        <!-- Message Bubble -->
+        <div :class="['message', message.sender]">
+          <p v-html="message.text" />
+        </div>
       </div>
-      <!-- <div ref="emojiContainer" class="emoji-container"></div> -->
     </div>
 
     <!-- Input Area -->
@@ -40,8 +64,8 @@ const SENTIMENT_TYPE = {
 const POSITIVE_EMOJI_LIST = [
   "\u{1F604}",
   "\u{1F602}",
-  // "\u{1F972}",
-  "\u{1F607}",
+  "\u{1F972}",
+  // "\u{1F607}",
   "\u{1F60D}",
   "\u{1F61A}",
   "\u{1F61C}",
@@ -97,44 +121,90 @@ const POSITIVE_SOUND_LIST = [
   "/sounds/positive/1F602_Positive_mixdown.mp3",
   "/sounds/positive/1F604_Positive_mixdown.mp3",
   "/sounds/positive/1F607_Positive_mixdown.mp3",
-  "/sounds/positive/1F972_Positive_mixdown.mp3",
-]
+  "/sounds/positive/1F972_Positive_mixdown.mp3"
+];
+
+const NEGATIVE_SOUND_LIST = [
+  "/sounds/negative/1F62B_Positive_mixdown.mp3",
+  "/sounds/negative/1F612_Positive_mixdown.mp3",
+  "/sounds/negative/1F613_Negative_mixdown.mp3",
+  "/sounds/negative/1F614_Positive_mixdown.mp3",
+  "/sounds/negative/1F621_Negative_mixdown.mp3",
+  "/sounds/negative/1F622_Negative_mixdown.mp3",
+  "/sounds/negative/1F627_Negative_mixdown.mp3",
+  "/sounds/negative/1F630_Negative_mixdown.mp3",
+  "/sounds/negative/1F633_Negative_mixdown.mp3",
+  "/sounds/negative/1F922_Negative_mixdown.mp3"
+];
 
 export default {
   data() {
     return {
       inputMessage: "",
+      avatar: {
+        bot: {
+          name: "Jacqueline Ryu",
+          // image: "\u{1F600}"
+          image: "/images/bot.jpg"
+        },
+        user: {
+          name: "You",
+          // mage: "\u{1F600}",
+          image: "/images/sender.jpg"
+        }
+      },
       messages: [
-        { text: "Hello! How are you feeling?", sender: "bot" },
-        { text: "Hi! I have aX question.", sender: "user" }
+        {
+          text: "Hello! How are you feeling?",
+          sender: "bot"
+        }
+        // {
+        //   text: "Hi! I have a question.",
+        //   sender: "user"
+        // }
       ],
-      audio: null
+      audio: null,
+      isPageVisible: true
     };
+  },
+  mounted() {
+    document.addEventListener("visibilitychange", this.handleVisibilityChange);
+  },
+  beforeUnmount() {
+    document.removeEventListener("visibilitychange", this.handleVisibilityChange);
   },
   methods: {
     ...mapActions(["fetchData"]),
+    handleVisibilityChange() {
+      this.isPageVisible = !document.hidden; // document.hidden 값을 반대로 설정
+
+      if (!this.isPageVisible && this.audio) {
+        this.audio.pause();
+      }
+    },
     async sendMessage() {
       if (this.inputMessage.trim() === "") return;
 
       // Add user message
       this.messages.push({ text: this.inputMessage, sender: "user" });
 
+      // this.messages.push({
+      //   text: `
+			// 		Your sentiment is
+			// 	`,
+      //   sender: "bot"
+      // });
       const text = this.inputMessage;
       this.inputMessage = "";
 
       // Simulate bot response
       const response = await this.fetchData({ text });
-      this.showEmojis(response.data.sentiment);
-      this.playAudio(response.data.sentiment);
-
+      const sentiment = response.data.sentiment;
+      this.showEmojis(sentiment);
+      this.playAudio(sentiment);
       this.messages.push({
         text: `
-					sentiment: ${response.data.sentiment}<br/>
-					sentimentScores<br/>
-					-mixed: ${Number(response.data.sentimentScores.Mixed).toFixed(2)}<br/>
-					-negative: ${Number(response.data.sentimentScores.Negative).toFixed(2)}<br/>
-					-neutral: ${Number(response.data.sentimentScores.Neutral).toFixed(2)}<br/>
-					-positive: ${Number(response.data.sentimentScores.Positive).toFixed(2)}
+					Your sentiment is ${sentiment}${this.getEmoji(sentiment)}
 				`,
         sender: "bot"
       });
@@ -148,13 +218,11 @@ export default {
       }
     },
     showEmojis(sentiment) {
-      const emojiList = this.getEmojiList(sentiment);
       const emojisToAdd = 10; // 한 번에 추가할 이모티콘 개수
 
       for (let i = 0; i < emojisToAdd; i++) {
         const emoji = document.createElement("span");
-        emoji.textContent =
-          emojiList[Math.floor(Math.random() * emojiList.length)];
+        emoji.textContent = this.getEmoji(sentiment);
         emoji.style.position = "absolute";
         emoji.style.left = `${Math.random() * 100}%`;
         emoji.style.bottom = "0";
@@ -191,13 +259,31 @@ export default {
           return ["🎉", "❤️", "😂", "👍", "✨", "🥳"];
       }
     },
-    playAudio(/*sentiment*/) {
-      this.audio = new Audio(this.getSound());
-      this.audio.play();
+    getEmoji(sentiment) {
+      const emojiList = this.getEmojiList(sentiment);
+      return emojiList[Math.floor(Math.random() * emojiList.length)];
     },
-    getSound(/*sentiment*/) {
-      const soundList = POSITIVE_SOUND_LIST;
-      // TODO: switch
+    playAudio(sentiment) {
+      if (this.audio) {
+        this.audio.pause();
+      }
+
+      this.audio = new Audio(this.getSound(sentiment));
+      this.audio.play();
+      console.dir(this.audio)
+    },
+    getSound(sentiment) {
+      let soundList;
+      switch (sentiment) {
+        case SENTIMENT_TYPE.POSITIVE:
+        case SENTIMENT_TYPE.MIXED:
+        case SENTIMENT_TYPE.NEUTRAL:
+          soundList = POSITIVE_SOUND_LIST;
+          break;
+        case SENTIMENT_TYPE.NEGATIVE:
+          soundList = NEGATIVE_SOUND_LIST;
+          break;
+      }
 
       return soundList[Math.floor(Math.random() * soundList.length)];
     }
@@ -228,28 +314,70 @@ export default {
   overflow-y: auto;
   display: flex;
   flex-direction: column;
+  gap: 20px;
+}
+
+.message-wrapper {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+
+  &.user {
+    align-items: flex-end;
+  }
+}
+
+.message-header {
+  display: flex;
+  align-items: center;
+  margin-bottom: 5px;
   gap: 10px;
+
+  .avatar {
+    width: 28px;
+    height: 28px;
+    border-radius: 50%;
+    object-fit: cover;
+  }
+
+  .name {
+    font-size: 12px;
+    font-weight: bold;
+    color: #555;
+    margin-right: 4px;
+  }
+
+  .user-imoji {
+    height: 26px;
+    width: 26px;
+    font-size: 22px;
+    /* border: 2px solid; */
+    border-radius: 16px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+  }
 }
 
 .message {
-  max-width: 80%;
+  max-width: 70%;
   padding: 10px;
   border-radius: 10px;
   word-wrap: break-word;
   font-size: 14px;
   text-align: left;
-}
 
-.message.user {
-  align-self: flex-end;
-  background-color: #007bff;
-  color: white;
-}
+  &.user {
+    align-self: flex-end;
+    background-color: #007bff;
+    color: white;
+  }
 
-.message.bot {
-  align-self: flex-start;
-  background-color: #e1e1e1;
-  color: black;
+  &.bot {
+    align-self: flex-start;
+    background-color: #e1e1e1;
+    color: black;
+  }
 }
 
 .input-area {
