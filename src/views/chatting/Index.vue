@@ -143,7 +143,7 @@ export default {
       inputMessage: "",
       avatar: {
         bot: {
-          name: "Jacqueline Ryu",
+          name: "Listener",
           // image: "\u{1F600}"
           image: "/images/bot.jpg"
         },
@@ -300,7 +300,7 @@ export default {
   flex-direction: column;
   justify-content: space-between;
   width: 100vw;
-  height: 100vh;
+  height: 100svh;
   margin: 0 auto;
   border: 1px solid #ccc;
   border-radius: 10px;
