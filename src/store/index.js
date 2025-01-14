@@ -8,13 +8,11 @@ export default new Vuex.Store({
   state: {},
   mutations: {},
   actions: {
-    async fetchData(_, { text }) {
+    async fetchData(_, data) {
       return await axios.get("http://35.158.139.236:3000/analyze", {
-        params: {
-          text
-        }
+        params: data
       });
-    },
+    }
   },
   modules: {}
 });
