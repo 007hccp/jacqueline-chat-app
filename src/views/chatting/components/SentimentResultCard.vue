@@ -1,21 +1,27 @@
 <template>
-  <div class="grid-container">
-    <div
-      v-for="(card, index) in cards"
-      :key="index"
-      class="card-container"
-    >
-      <div class="card" :class="{ flipped: card.isFlipped }">
-        <div class="card-front">
-          <!-- <img :src="'/images/bot.jpg'" class="card-front-image" /> -->
-        </div>
-        <div class="card-back">
-          <div>
-            <div class="card-back-emoji">
-              {{ card.emoji }}
-            </div>
+  <div>
+    <!-- 문구 추가 -->
+    <div class="grid-header">
+      <p>Your emotion sound-emoji is ready.</p>
+    </div>
+    <div class="grid-container">
+      <div
+        v-for="(card, index) in cards"
+        :key="index"
+        class="card-container"
+      >
+        <div class="card" :class="{ flipped: card.isFlipped }">
+          <div class="card-front">
+            <!-- <img :src="'/images/bot.jpg'" class="card-front-image" /> -->
+          </div>
+          <div class="card-back">
             <div>
-              {{ card.sentiment }}
+              <div class="card-back-emoji">
+                {{ card.emoji }}
+              </div>
+              <div>
+                {{ card.sentiment }}
+              </div>
             </div>
           </div>
         </div>
@@ -147,5 +153,22 @@ export default {
 /* 뒤집힌 카드 */
 .card.flipped {
   transform: rotateY(180deg);
+}
+
+.grid-header {
+  text-align: center;
+  margin-bottom: 20px;
+}
+
+.grid-header h2 {
+  font-size: 24px;
+  margin: 0;
+  color: #333;
+}
+
+.grid-header p {
+  font-size: 16px;
+  color: #666;
+  margin: 5px 0 0;
 }
 </style>
