@@ -82,6 +82,8 @@ export default {
   width: calc(100% - 60px);
   padding-left: 20px;
   padding-right: 20px;
+  max-height: 310px;
+  grid-template-rows: repeat(3, minmax(30px, 90px));
   /* padding-top: 30svh;
   padding-bottom: 30svh; */
 }
@@ -102,6 +104,7 @@ export default {
   height: 100%;
   transform-style: preserve-3d;
   transition: transform 0.6s; /* 부드러운 회전 */
+  max-height: 98px;
 }
 
 /* 카드 앞면, 뒷면 */
@@ -136,7 +139,7 @@ export default {
 
 /* 카드 뒷면 */
 .card-back {
-  background-color: #2ecc71;
+  background-color: black;
   transform: rotateY(180deg);
   border-radius: 4px;
 }

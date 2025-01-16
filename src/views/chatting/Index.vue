@@ -111,29 +111,89 @@ const MIXED_EMOJI_LIST = [
 ];
 
 const POSITIVE_SOUND_LIST = [
-  "/sounds/positive/1F60D_Positive_mixdown.mp3",
-  "/sounds/positive/1F60E_Positive_mixdown.mp3",
-  "/sounds/positive/1F61A_Positive_mixdown.mp3",
-  "/sounds/positive/1F61C_Positive_mixdown.mp3",
-  "/sounds/positive/1F602_Positive_mixdown.mp3",
-  "/sounds/positive/1F604_Positive_mixdown.mp3",
-  "/sounds/positive/1F607_Positive_mixdown.mp3",
-  "/sounds/positive/1F920_Positive_mixdown.mp3",
-  "/sounds/positive/1F972_Positive_mixdown.mp3",
-  "/sounds/positive/1F973_Positive_mixdown.mp3"
+  {
+    file: "/sounds/positive/1F604_Positive_mixdown.mp3",
+    delay: 1200
+  },
+  {
+    file: "/sounds/positive/1F602_Positive_mixdown.mp3",
+    delay: 2000
+  },
+  {
+    file: "/sounds/positive/1F972_Positive_mixdown_01.mp3",
+    delay: 3000
+  },
+  {
+    file: "/sounds/positive/1F607_Positive_mixdown_01.mp3",
+    delay: 1500
+  },
+  {
+    file: "/sounds/positive/1F60D_Positive_mixdown.mp3",
+    delay: 2100
+  },
+  {
+    file: "/sounds/positive/1F61A_Positive_mixdown_01.mp3",
+    delay: 1600
+  },
+  {
+    file: "/sounds/positive/1F61C_Positive_mixdown.mp3",
+    delay: 1200
+  },
+  {
+    file: "/sounds/positive/1F60E_Positive_mixdown.mp3",
+    delay: 2200
+  },
+  {
+    file: "/sounds/positive/1F973_Positive_mixdown.mp3",
+    delay: 2000
+  },
+  {
+    file: "/sounds/positive/1F920_Positive_mixdown_01.mp3",
+    delay: 1600
+  }
 ];
 
 const NEGATIVE_SOUND_LIST = [
-  "/sounds/negative/1F62B_Positive_mixdown.mp3",
-  "/sounds/negative/1F612_Positive_mixdown.mp3",
-  "/sounds/negative/1F613_Negative_mixdown.mp3",
-  "/sounds/negative/1F614_Positive_mixdown.mp3",
-  "/sounds/negative/1F621_Negative_mixdown.mp3",
-  "/sounds/negative/1F622_Negative_mixdown.mp3",
-  "/sounds/negative/1F627_Negative_mixdown.mp3",
-  "/sounds/negative/1F630_Negative_mixdown.mp3",
-  "/sounds/negative/1F633_Negative_mixdown.mp3",
-  "/sounds/negative/1F922_Negative_mixdown.mp3"
+  {
+    file: "/sounds/negative/1F612_Positive_mixdown_01.mp3",
+    delay: 1400
+  },
+  {
+    file: "/sounds/negative/1F614_Positive_mixdown_01.mp3",
+    delay: 1600
+  },
+  {
+    file: "/sounds/negative/1F62B_Positive_mixdown_01.mp3",
+    delay: 1600
+  },
+  {
+    file: "/sounds/negative/1F622_Negative_mixdown_01.mp3",
+    delay: 1300
+  },
+  {
+    file: "/sounds/negative/1F621_Negative_mixdown_01.mp3",
+    delay: 1600
+  },
+  {
+    file: "/sounds/negative/1F633_Negative_mixdown_01.mp3",
+    delay: 1500
+  },
+  {
+    file: "/sounds/negative/1F630_Negative_mixdown_01.mp3",
+    delay: 1200
+  },
+  {
+    file: "/sounds/negative/1F613_Negative_mixdown.mp3",
+    delay: 2000
+  },
+  {
+    file: "/sounds/negative/1F627_Negative_mixdown_01.mp3",
+    delay: 1600
+  },
+  {
+    file: "/sounds/negative/1F922_Negative_mixdown_01.mp3",
+    delay: 1600
+  }
 ];
 
 const GOAL_ANSWER_COUNT = 9;
@@ -161,10 +221,23 @@ export default {
       answers: [],
       emoji: {},
       sound: {},
-      cards: []
+      cards: [],
+      loopHandler: null
     };
   },
-  mounted() {
+  async mounted() {
+    for (const audioInfo of POSITIVE_SOUND_LIST) {
+      const audio = new Audio(audioInfo.file);
+      audio.preload = "auto";
+      audio.load();
+    }
+
+    for (const audioInfo of NEGATIVE_SOUND_LIST) {
+      const audio = new Audio(audioInfo.file);
+      audio.preload = "auto";
+      audio.load();
+    }
+
     document.addEventListener("visibilitychange", this.handleVisibilityChange);
     this.resetEmoji();
     this.resetSound();
@@ -190,14 +263,16 @@ export default {
     isReachedGoal(newValue) {
       if (!newValue) return;
 
-      for (const answer of this.answers) {
-        this.cards.push({
-          sentiment: answer.sentiment,
-          emoji: this.getEmojiAndRemove(answer.sentiment)
-        });
-      }
+      setTimeout(() => {
+        for (const answer of this.answers) {
+          this.cards.push({
+            sentiment: answer.sentiment,
+            emoji: this.getEmojiAndRemove(answer.sentiment)
+          });
+        }
 
-      this.playAllAnswerAudio();
+        this.playAllAnswerAudio();
+      }, 3000);
     }
   },
   methods: {
@@ -233,9 +308,14 @@ export default {
       if (!this.isPageVisible && this.audio) {
         this.audio.pause();
       }
+
+      if (!this.isPageVisible && this.loopHandler) {
+        clearTimeout(this.loopHandler);
+        this.loopHandler = null;
+      }
     },
     async resetApp() {
-      if (!this.isReachedGoal) return;
+      if (!this.isReachedGoal || !this.isDataReady) return;
 
       this.resetMessages();
       this.resetEmoji();
@@ -244,6 +324,11 @@ export default {
       this.cards = [];
       if (this.audio) {
         this.audio.pause();
+      }
+
+      if (this.loopHandler) {
+        clearTimeout(this.loopHandler);
+        this.loopHandler = null;
       }
     },
     async resetEmoji() {
@@ -276,9 +361,9 @@ export default {
           previus: this.getPreviusAnswer()
         });
 
-        const sentiment = response.data.sentiment;
+        const sentiment = response.data.sentiment === SENTIMENT_TYPE.MIXED ? SENTIMENT_TYPE.NEUTRAL : response.data.sentiment;
         this.showEmojis(sentiment);
-        const audio = this.playAudio(sentiment, this.answers.length + 1 === GOAL_ANSWER_COUNT);
+        const audio = await this.playAudio(sentiment);
 
         this.saveAnswer(
           this.messages[this.messages.length - 1].text,
@@ -289,7 +374,7 @@ export default {
 
         this.messages.push({
           // text: `Your sentiment is ${sentiment}${this.getEmoji(sentiment)}`,
-          text: response.data.question,
+          text: this.answers.length == GOAL_ANSWER_COUNT ? 'The mirror of the emotions read by the emoji are loading...' : response.data.question,
           sender: "bot"
         });
 
@@ -346,18 +431,28 @@ export default {
       emojiList.splice(index, 1);
       return result;
     },
-    playAudio(sentiment, isNotPlay) {
+    async playAudio(sentiment) {
       if (this.audio) {
         this.audio.pause();
       }
 
+      /*
       const audioFile = this.getSound(sentiment);
-      if (!isNotPlay) {
-        this.audio = new Audio(audioFile);
-        this.audio.play();
-      }
+      this.audio = new Audio(audioFile);
+      this.audio.play();
+      */
+      const audioInfo = this.getSound(sentiment);
+      this.audio = new Audio(audioInfo.file);
+      this.audio.preload = "auto";
+      await this.audio.load();
+      this.audio.play();
+      // this.audio.preload = "auto";
+      // this.audio.addEventListener("loadeddata", () => {
+      //   console.log('Audio fully loaded and can play through without buffering');
+      //   this.audio.play();
+      // });
 
-      return audioFile;
+      return audioInfo;
     },
     getSound(sentiment) {
       let soundList;
@@ -383,21 +478,53 @@ export default {
         this.audio.pause();
       }
 
-      let index = 0;
+      this.loopWithVariableDelays(this.answers);
+
+      // let index = 0;
+      // setImmediate(() => {
+      //   console.log(`${delays[index] / 1000}초 후 실행`);
+      //   index = (index + 1) % delays.length; // 간격 순환
+      // }, delays[index]);
+
+      /*
       this.audio = new Audio(this.answers[index].audio);
       this.audio.play();
+      console.log('첫 음악 재생');
 
       this.audio.addEventListener("ended", () => {
         if (!this.isDataReady) return;
 
         index++;
-        if (index < this.answers.length) {
-          this.audio.src = this.answers[index].audio;
-          this.audio.play();
-        } else {
-          console.log("All tracks finished!");
-        }
+        if (index >= this.answers.length) index = 0;
+
+        console.log(`${index}번째 음악 재생`);
+
+        this.audio.src = this.answers[index].audio;
+        this.audio.play();
       });
+      */
+    },
+    async loopWithVariableDelays(answers) {
+      let index = 0;
+
+      const next = async () => {
+        if (this.audio) {
+          this.audio.pause();
+        }
+
+        this.audio = new Audio(answers[index].audio.file);
+        this.audio.preload = "auto";
+        await this.audio.load();
+        this.audio.play();
+
+        let delay = answers[index].audio.delay;
+
+        console.log(`${delay / 1000}초 후 다음 파일 실행`);
+        index = (index + 1) % answers.length; // 간격 순환
+        this.loopHandler = setTimeout(next, delay);
+      };
+
+      await next(); // 첫 번째 실행
     }
   },
   updated() {
@@ -418,6 +545,15 @@ export default {
   border-radius: 10px;
   background-color: #f9f9f9;
   overflow: hidden;
+
+  @media (min-width: 1024px) {
+    // .chat-container {
+    width: 390px;
+    height: 80%;
+    margin: 0;
+    margin-right: 96px;
+    // }
+  }
 }
 
 .chat-window {
@@ -429,8 +565,9 @@ export default {
   gap: 20px;
 
   &--result {
-    padding-top: 30%;
-    padding-bottom: 30%;
+    // padding-top: 30%;
+    // padding-bottom: 30%;
+    justify-content: center;
   }
 }
 
